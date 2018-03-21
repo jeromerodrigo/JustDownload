@@ -10,20 +10,15 @@ namespace JustDownloadConsole
 {
     class Program
     {
-        const int DEFAULT_CONCURRENT_DOWNLOADS = 2;
-
         static void Main(string[] args)
         {
             string version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
             Console.WriteLine($"JustDownload Console App v{version}");
 
-            StartDownloading();
-
-            Console.WriteLine("Press any key to close...");
-            Console.ReadKey();
+            Task.WaitAll(StartDownloading());
         }
 
-        static async void StartDownloading()
+        static async Task StartDownloading()
         {
             var recordManager = JustDownloadFactory.GetRecordManager();
             var downloader = JustDownloadFactory.GetDownloader();
@@ -47,6 +42,9 @@ namespace JustDownloadConsole
             {
                 Console.Error.WriteLine(e);
             }
+
+            Console.WriteLine("Press any key to close...");
+            Console.ReadKey();
         }
     }
 }
