@@ -13,7 +13,7 @@ namespace JustDownloadConsole
         static void Main(string[] args)
         {
             string version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            Console.WriteLine($"JustDownload Console App v{version}");
+            Console.WriteLine($"JustDownload Console v{version}");
 
             Task.WaitAll(StartDownloading());
         }
@@ -31,7 +31,10 @@ namespace JustDownloadConsole
                 {
                     Console.WriteLine("Starting downloads...");
 
-                    await downloader.GetFiles(records);
+                    await downloader.GetFiles(records, record =>
+                    {
+                        Console.Error.WriteLine($"Error occurred when downloading {record.Filename} from {record.Source}");
+                    });
                 }
                 else
                 {

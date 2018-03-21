@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.IO;
@@ -83,15 +84,22 @@ namespace JustDownload.Shared
                     httpStream.CopyTo(fileStream);
                     fileStream.Flush();
                 }
+
+                // Mark record as successful
+                downloadRecord.IsSuccess = true;
             }
             catch (Exception e)
             {
                 Debug.WriteLine($"{downloadRecord.Name}, Ex: {e.GetType()} {e.Message}");
+
+                // Mark record as failed
+                downloadRecord.IsSuccess = false;
+
                 throw e;
             }
         }
 
-        public async Task GetFiles(ICollection<DownloadRecord> downloadRecords)
+        public async Task GetFiles(ICollection<DownloadRecord> downloadRecords, Action<DownloadRecord> onErrorAction = null)
         {
             foreach (var batch in Utility.SplitList(downloadRecords.ToList(), DEFAULT_CONCURRENT_DOWNLOADS))
             {
@@ -103,7 +111,9 @@ namespace JustDownload.Shared
                 {
                     Debug.WriteLine($"Caught exception: {e.GetType()} {e.Message}");
 
-                    // TODO Find a way to notify caller that exception has happened
+                    // Notify caller that exception has happened
+                    if (onErrorAction != null)
+                        batch.Where(record => !record.IsSuccess ?? true).ToList().ForEach(record => onErrorAction.Invoke(record));
                     
                     // TODO Make configurable stop on first failure
                 }

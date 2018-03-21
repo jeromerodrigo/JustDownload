@@ -10,5 +10,7 @@ namespace JustDownload.Shared
         public string Filename { get; set; }
         public Uri Source { get; set; }
         public Uri Destination { get; set; }
+
+        public bool? IsSuccess { get; set; }
     }
 }

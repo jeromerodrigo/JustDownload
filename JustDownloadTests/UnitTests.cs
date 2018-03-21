@@ -66,6 +66,8 @@ namespace JustDownload.Test
             await downloader.GetFile(record);
 
             Assert.IsTrue(File.Exists(record.Filename));
+            Assert.IsNotNull(record.IsSuccess, "Success flag should have been set!");
+            Assert.AreEqual(true, record.IsSuccess, "Expected a success flag!");
         }
 
         [TestMethod]
@@ -93,6 +95,8 @@ namespace JustDownload.Test
 
             Assert.IsTrue(exceptionThrown, "Expected an exception to be thrown!");
             Assert.IsFalse(File.Exists(record.Filename));
+            Assert.IsNotNull(record.IsSuccess, "Success flag should have been set!");
+            Assert.AreEqual(false, record.IsSuccess, "Expected a failure flag!");
         }
 
         [TestMethod]
@@ -120,6 +124,8 @@ namespace JustDownload.Test
 
             Assert.IsTrue(exceptionThrown, "Expected an exception to be thrown!");
             Assert.IsFalse(File.Exists(record.Filename));
+            Assert.IsNotNull(record.IsSuccess, "Success flag should have been set!");
+            Assert.AreEqual(false, record.IsSuccess, "Expected a failure flag!");
         }
 
         [TestMethod]
@@ -205,7 +211,12 @@ namespace JustDownload.Test
             // Reset the counter
             HttpClientDownloader.GetFileCount = 0;
 
-            await downloader.GetFiles(records);
+            int numTimesErrorCalledBack = 0;
+
+            await downloader.GetFiles(records, record =>
+            {
+                numTimesErrorCalledBack++;
+            });
 
             Assert.IsTrue(File.Exists(records[0].Filename));
 
@@ -218,6 +229,7 @@ namespace JustDownload.Test
             Assert.IsFalse(File.Exists(records[5].Filename));
 
             Assert.AreEqual(records.Count(), HttpClientDownloader.GetFileCount);
+            Assert.AreEqual(3, numTimesErrorCalledBack, "Number of times the error callback was called");
         }
 
         [TestMethod]

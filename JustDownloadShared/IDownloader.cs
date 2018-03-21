@@ -8,6 +8,6 @@ namespace JustDownload.Shared
     public interface IDownloader
     {
         Task GetFile(DownloadRecord downloadRecord);
-        Task GetFiles(ICollection<DownloadRecord> downloadRecords);
+        Task GetFiles(ICollection<DownloadRecord> downloadRecords, Action<DownloadRecord> onErrorAction = null);
     }
 }
