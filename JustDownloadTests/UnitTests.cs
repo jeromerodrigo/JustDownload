@@ -80,12 +80,18 @@ namespace JustDownload.Test
                 Source = new Uri("http://google.com/test")
             };
 
-            var exception = await Assert.ThrowsExceptionAsync<Exception>(async () =>
+            bool exceptionThrown = false;
+
+            try
             {
                 await downloader.GetFile(record);
-            });
+            }
+            catch (Exception)
+            {
+                exceptionThrown = true;
+            }
 
-            Assert.IsNotNull(exception);
+            Assert.IsTrue(exceptionThrown, "Expected an exception to be thrown!");
             Assert.IsFalse(File.Exists(record.Filename));
         }
 
@@ -101,12 +107,18 @@ namespace JustDownload.Test
                 Source = new Uri("http://lalalalala.xz")
             };
 
-            var exception = await Assert.ThrowsExceptionAsync<Exception>(async () =>
+            bool exceptionThrown = false;
+
+            try
             {
                 await downloader.GetFile(record);
-            });
+            }
+            catch (Exception)
+            {
+                exceptionThrown = true;
+            }
 
-            Assert.IsNotNull(exception);
+            Assert.IsTrue(exceptionThrown, "Expected an exception to be thrown!");
             Assert.IsFalse(File.Exists(record.Filename));
         }
 
@@ -143,6 +155,69 @@ namespace JustDownload.Test
             {
                 Assert.IsTrue(File.Exists(record.Filename));
             }
+        }
+
+        [TestMethod]
+        public async Task TestGetFiles_OneFailure_ShouldContinue()
+        {
+            var downloader = JustDownloadFactory.GetDownloader();
+
+            var records = new DownloadRecord[]
+            {
+                new DownloadRecord()
+                {
+                    Name = "Test",
+                    Filename = "TestGetFiles_Failure_result1.pdf",
+                    Source = new Uri("http://viewnet.com.my/downloads/viewnet_diy_pricelist.pdf")
+                },
+                new DownloadRecord()
+                {
+                    Name = "Test 2",
+                    Filename = "TestGetFiles_Failure_result2.pdf",
+                    Source = new Uri("http://google.com/lol")
+                },
+                new DownloadRecord()
+                {
+                    Name = "Test 3",
+                    Filename = "TestGetFiles_Failure_result3.pdf",
+                    Source = new Uri("http://viewnet.com.my/downloads/viewnet_diy_pricelist.pdf")
+                },
+                new DownloadRecord()
+                {
+                    Name = "Test 4",
+                    Filename = "TestGetFiles_Failure_result4.pdf",
+                    Source = new Uri("http://viewnet.com.my/downloads/viewnet_diy_pricelist.pdf")
+                },
+                new DownloadRecord()
+                {
+                    Name = "Test 5",
+                    Filename = "TestGetFiles_Failure_result5.pdf",
+                    Source = new Uri("http://google.com/lol")
+                },
+                new DownloadRecord()
+                {
+                    Name = "Test 6",
+                    Filename = "TestGetFiles_Failure_result6.pdf",
+                    Source = new Uri("http://google.com/lol")
+                },
+            };
+
+            // Reset the counter
+            HttpClientDownloader.GetFileCount = 0;
+
+            await downloader.GetFiles(records);
+
+            Assert.IsTrue(File.Exists(records[0].Filename));
+
+            Assert.IsFalse(File.Exists(records[1].Filename));
+
+            Assert.IsTrue(File.Exists(records[2].Filename));
+            Assert.IsTrue(File.Exists(records[3].Filename));
+
+            Assert.IsFalse(File.Exists(records[4].Filename));
+            Assert.IsFalse(File.Exists(records[5].Filename));
+
+            Assert.AreEqual(records.Count(), HttpClientDownloader.GetFileCount);
         }
 
         [TestMethod]

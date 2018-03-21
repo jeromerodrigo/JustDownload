@@ -54,13 +54,23 @@ namespace JustDownload.Shared
         }
     }
 
-    class HttpClientDownloader : IDownloader
+    public class HttpClientDownloader : IDownloader
     {
         const int DEFAULT_CONCURRENT_DOWNLOADS = 2;
         static HttpClient httpClient = new HttpClient();
 
+        public static int GetFileCount = 0;
+
+        internal HttpClientDownloader()
+        {
+            
+        }
+
         public async Task GetFile(DownloadRecord downloadRecord)
         {
+            GetFileCount++;
+            Debug.WriteLine($"Start download of {downloadRecord.Name} from {downloadRecord.Source}");
+
             try
             {
                 var response = await httpClient.GetAsync(downloadRecord.Source);
@@ -74,23 +84,32 @@ namespace JustDownload.Shared
                     fileStream.Flush();
                 }
             }
-            catch (HttpRequestException e)
+            catch (Exception e)
             {
-                Debug.WriteLine(e.Message);
-                throw new Exception(e.Message);
+                Debug.WriteLine($"{downloadRecord.Name}, Ex: {e.GetType()} {e.Message}");
+                throw e;
             }
         }
 
         public async Task GetFiles(ICollection<DownloadRecord> downloadRecords)
         {
-            var downloadTasks = downloadRecords.Select(record => GetFile(record));
-
-            for (var batchNumber = 1; batchNumber < Utility.CalculateTotalNumberOfBatches(downloadRecords.Count, DEFAULT_CONCURRENT_DOWNLOADS); batchNumber++)
+            foreach (var batch in Utility.SplitList(downloadRecords.ToList(), DEFAULT_CONCURRENT_DOWNLOADS))
             {
-                var batch = Utility.GetBatch(downloadTasks, batchNumber, DEFAULT_CONCURRENT_DOWNLOADS);
+                try
+                {
+                    await Task.WhenAll(batch.Select(record => GetFile(record)));
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine($"Caught exception: {e.GetType()} {e.Message}");
 
-                await Task.WhenAll(batch);
+                    // TODO Find a way to notify caller that exception has happened
+                    
+                    // TODO Make configurable stop on first failure
+                }
             }
+
+            Debug.WriteLine($"GetFileCount: {HttpClientDownloader.GetFileCount}");
         }
     }
 
@@ -207,5 +226,13 @@ namespace JustDownload.Shared
 
         public static int CalculateTotalNumberOfBatches(int totalNumberOfItems, int itemsPerBatch) 
             => Convert.ToInt32(Math.Ceiling((double) totalNumberOfItems / itemsPerBatch));
+
+        public static IEnumerable<List<T>> SplitList<T>(List<T> items, int nSize)
+        {
+            for (int i = 0; i < items.Count; i += nSize)
+            {
+                yield return items.GetRange(i, Math.Min(nSize, items.Count - i));
+            }
+        }
     }
 }
